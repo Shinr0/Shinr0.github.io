@@ -1,0 +1,82 @@
+# section information
+# Section désactivée : remplacée par la section "Services" (services.yaml),
+# orientée valeur client. Remettre enable: true pour la réafficher.
+section:
+  name: Compétences
+  id: skills
+  enable: false
+  weight: 5
+  showOnNavbar: true
+  filter: true
+  # Can optionally hide the title in sections
+  # hideTitle: true
+
+# filter buttons
+buttons:
+- name: Toutes
+  filter: "all"
+- name: Basique
+  filter: "basic"
+- name: Langage
+  filter: "language"
+- name: Conteneur
+  filter: "container"
+- name: CICD
+  filter: "cicd"
+- name: Cloud
+  filter: "cloud"
+
+# Your Skills.
+# Give a summary of you each skill in the summary section.
+skills:
+- name: Kubernetes
+  logo: /images/sections/skills/kubernetes.png
+  summary: "Certifié CKA. Je suis en capacité de déployer et maintenir une application sur Kubernetes. Je possède de solides connaissances sur l'administration d'un cluster."
+  categories: ["container"]
+  url: "https://kubernetes.io/"
+
+- name: Développement Python
+  logo: /images/sections/skills/python.svg
+  summary: "Je l'utilise comme langage principal pour le développement de mes programmes. En capacité d'écrire des programmes évolutifs, testables (pytest) et maintenables."
+  categories: ["basic", "language"]
+  url: "https://www.python.org/"
+
+- name: Cloud GCP
+  logo: /images/sections/skills/gcp.svg
+  summary: "Certifié Professional Cloud Architect avec 3 années d'expériences d'utilisation des services GCP (Compute Engine, Cloud Function, Cloud Run, Big Query, IAM etc...)."
+  categories: ["cloud"]
+  url: "https://cloud.google.com/"
+
+- name: Ansible
+  logo: /images/sections/skills/ansible.svg
+  summary: "Développement de playbooks et rôles Ansible from scratch. Utilisation couplée avec AWX pour la MCO des machines."
+  categories: ["basic", "language"]
+  url: "https://www.ansible.com/"
+
+- name: Linux
+  logo: /images/sections/skills/linux.png
+  summary: "Bonnes connaissances en administration système (RHEL) et création de scripts bash."
+  categories: ["basic"]
+  url: "https://www.kernel.org/"
+
+- name: GitHub Actions
+  logo: /images/sections/skills/github.svg
+  summary: "Utilisation de GitHub Actions pour la CI/CD et l'automatisation des repos (release-please, Renovate, ...)"
+  categories: ["cicd"]
+  url: "https://github.com/features/actions"
+
+- name: Terraform
+  logo: /images/sections/skills/terraform.svg
+  summary: "Certifié Terraform. Création de modules Terraform from scratch et déploiement des ressources GCP."
+  categories: ["basic", "language"]
+  url: "https://developer.hashicorp.com/terraform"
+
+- name: Packer
+  logo: /images/sections/skills/packer.svg
+  summary: "Création de golden images Linux et Windows avec Packer."
+  categories: ["basic", "language"]
+
+- name: Cloud Init
+  logo: /images/sections/skills/cloudinit.svg
+  summary: "Utilisation de cloud-init pour la configuration des machines Linux."
+  categories: ["cloud"]

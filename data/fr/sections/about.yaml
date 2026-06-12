@@ -1,0 +1,75 @@
+# section information
+section:
+  name: A propos
+  id: about
+  enable: true
+  weight: 1
+  showOnNavbar: true
+  template: sections/about.html
+
+# your designation
+designation: Consultant Cloud DevOps | 7 ans d'expériences
+# your company information
+
+# your resume. this file path should be relative to you "static" directory
+# Dreprecated. Use resourceLinks instead.
+# resume: "files/resume.pdf"
+
+# a summary about you
+summary: "J'accélère vos mises en production et réduis vos coûts Cloud en sécurisant et automatisant vos infrastructures."
+
+# Disponibilité affichée sous le titre (mettre à jour selon votre planning)
+availability:
+  enable: true
+  text: "Disponible à partir de septembre 2026"
+
+# Bouton d'appel à l'action : prise de rendez-vous Calendly
+cta:
+  text: "Discutons de votre projet"
+  url: "https://calendly.com/romain-capelle3/entretien"
+
+# your social links
+# give as many as you want. use font-awesome for the icons.
+socialLinks:
+- name: Email
+  icon: "fas fa-envelope"
+  url: "romain.capelle3@gmail.com"
+
+- name: Github
+  icon: "fab fa-github"
+  url: "https://github.com/Shinr0"
+
+- name: LinkedIn
+  icon: "fab fa-linkedin"
+  url: "https://www.linkedin.com/in/romain-capelle/"
+
+# You can put custom buttons to link your relevant resources.
+# For example, you can put link for your resume.
+resourceLinks:
+- title: "Mon CV PDF"
+  url: "files/cv.html"
+
+# Show your badges
+# You can show your verifiable certificates from https://www.credly.com.
+# You can also show a circular bar indicating the level of expertise on a certain skill
+
+badges:
+- type: certification
+  name: Certified Kubernetes Administrator
+  url: "https://www.credly.com/badges/0714bf5e-9562-4e3e-8050-99a5fd1a1d57/public_url"
+  badge: "https://images.credly.com/size/340x340/images/8b8ed108-e77d-4396-ac59-2504583b9d54/cka_from_cncfsite__281_29.png"
+
+- type: certification
+  name: Associate Cloud Engineer
+  url: "https://www.credly.com/badges/b5c5d612-5b7c-41bf-be96-99a137a03f33/public_url"
+  badge: "https://images.credly.com/size/340x340/images/08096465-cbfc-4c3e-93e5-93c5aa61f23e/image.png"
+
+- type: certification
+  name: Professional Cloud Architect
+  url: "https://www.credly.com/badges/5e790c42-a11c-414a-9411-9b5a572fbcad/public_url"
+  badge: "https://images.credly.com/size/340x340/images/71c579e0-51fd-4247-b493-d2fa8167157a/image.png"
+
+- type: certification
+  name: Terraform Associate
+  url: "https://www.credly.com/users/romain-capelle"
+  badge: "https://images.credly.com/size/340x340/images/cd038261-9d1c-4792-bc62-3a3b5bda175c/blob"
