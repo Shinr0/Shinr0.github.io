@@ -128,7 +128,7 @@ requête, il renvoie au modèle ses instructions, l'historique de la session et 
 Avant d'ajouter un outil, j'ai donc réduit ce qu'il porte en permanence.
 
 **Un `CLAUDE.md` court et stable.** Ma première version disait : « Lire `PLAN.md` avant toute
-tâche ». Or `PLAN.md` fait 22 Ko — environ 380 lignes relues au début de chaque session, même pour
+tâche ». Or `PLAN.md` dépasse 20 Ko — près de 400 lignes relues au début de chaque session, même pour
 corriger une faute de frappe. La version actuelle tient en 24 lignes : les règles non négociables,
 les commandes, et un pointeur — « la phase en cours est dans le tableau Avancement du README ; ne
 lis de `PLAN.md` que la section utile ». Et il change rarement, ce qui laisse le cache de prompt
