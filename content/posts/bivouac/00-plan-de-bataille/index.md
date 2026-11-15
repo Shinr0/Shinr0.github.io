@@ -83,8 +83,7 @@ En le parcourant (mi-novembre 2026), j'ai compté environ **210 fiches outils** 
 **38 catégories**. Le piège est évident : on peut passer des semaines à comparer des outils sans
 jamais rien livrer.
 
-Et un détail m'a frappé : il existe une catégorie **« Copilot/Agent/LLM »**… et aucun outil n'y
-est rangé. L'IA est partout dans les discours sur le platform engineering, mais sa place reste à
+L'IA est partout dans les discours sur le platform engineering, mais sa place reste à
 dessiner. Ma première réponse est pragmatique : avant de mettre de l'IA *dans* la plateforme, je
 m'en sers pour la **construire** — et je montre comment la garder sous contrôle.
 
@@ -97,7 +96,7 @@ chaque plan, pour qu'une équipe obtienne quelque chose d'utile de bout en bout 
 
 | Plan | Mes choix | Dans le landscape ? |
 |---|---|---|
-| Developer Control Plane | GitHub · API de plateforme **kro** · portail FastAPI + HTMX | GitHub oui ; kro non |
+| Developer Control Plane | GitHub · **référentiel d'équipes** au format Backstage · API de plateforme **kro** · portail FastAPI + HTMX | GitHub, Backstage oui ; kro non |
 | Integration & Delivery | **Terraform** · GitHub Actions · **Argo CD** | oui, les trois |
 | Resource Plane | **GKE** Standard zonal, nœuds spot · **Config Connector** pour les objets GCP des équipes | Kubernetes oui ; Config Connector non |
 | Observability Plane | Prometheus / Grafana allégés · **OpenCost** · budget GCP | Prometheus, Grafana oui ; OpenCost non (Kubecost oui) |
@@ -140,10 +139,79 @@ Quatre de mes choix n'apparaissent pas dans le landscape. C'est voulu, et chacun
 - **External Secrets** n'est qu'un pont : la source de vérité reste Google Secret Manager, qui,
   lui, est bien dans le landscape.
 
-Et ce que j'exclus volontairement : **Backstage** (trop lourd pour une plateforme qui vit deux
-heures), les **orchestrateurs de plateforme** commerciaux, le **multi-cluster** et les **GPU**.
+Et ce que j'exclus volontairement : le moteur **Backstage** (trop lourd pour une plateforme qui vit
+deux heures — j'en garde le format de catalogue, voir plus bas), les **orchestrateurs de plateforme** commerciaux, le **multi-cluster** et les **GPU**.
 L'IA *intégrée* à la plateforme — un accès LLM par équipe et un assistant qui ouvre des pull
 requests — est **reportée en fin de série**, en option : elle n'a de sens qu'une fois le socle solide.
+
+---
+
+## Le référentiel d'équipes : à qui appartient quoi ?
+
+Un outil de platform engineering ne sert à rien s'il ne sait pas **qui** est derrière chaque
+demande. Quelles équipes existent ? Qui les manage, comment les joindre, qui est d'astreinte ?
+Quelles applications opèrent-elles, sur quel socle technique ? À qui facturer ce bucket, à qui
+demander avant de supprimer ce compte de service ?
+
+Dans Bivouac, ce référentiel vit **dans Git**, dossier `catalog/`, un fichier par équipe et par
+application. Pour une plateforme éphémère, c'est essentiel : le cluster disparaît à chaque
+`make down`, le référentiel, lui, reste — versionné, relu en pull request comme le reste.
+
+J'utilise le **format descripteur du catalogue Backstage**, devenu un standard de fait, sans faire
+tourner Backstage. Une équipe (fictive) :
+
+```yaml
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: payments
+  title: Équipe Paiements
+  annotations:
+    bivouac/manager: "Responsable produit Paiements"
+    bivouac/chat-channel: "#team-payments"
+    bivouac/on-call: payments-oncall
+    bivouac/cost-center: CC-1042
+spec:
+  type: team
+  profile:
+    displayName: Équipe Paiements
+    email: payments-team@example.com     # adresse de groupe, jamais personnelle
+  parent: engineering                     # le rattachement hiérarchique
+  children: []
+```
+
+Et une de ses applications, avec son socle technique :
+
+```yaml
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: checkout-api
+  tags: [python, fastapi, postgresql]
+  links:
+    - url: https://runbooks.example.com/checkout-api
+      title: Runbook
+spec:
+  type: service
+  lifecycle: production
+  owner: payments
+  system: checkout
+  dependsOn: [resource:payments-bucket]
+```
+
+Ce que le format ne prévoit pas — manager, canal de discussion, astreinte, centre de coût — passe
+par des annotations préfixées `bivouac/`. Et le référentiel est **branché** sur la plateforme :
+
+- une demande d'espace d'équipe doit citer une équipe qui existe dans `catalog/`, la CI le vérifie ;
+- le label `team` posé sur chaque ressource Kubernetes et GCP relie ressources et coûts à l'équipe :
+  OpenCost sait qui coûte quoi, et une ressource oubliée a un propriétaire ;
+- le portail affiche une page par équipe : manager, contacts, applications, ressources, coûts.
+
+Pourquoi ce format plutôt qu'un tableur, une CMDB ou une CRD dans le cluster ? Parce qu'il est
+versionné, validable, compris par l'outil que beaucoup de clients adopteront un jour — un client
+qui installe Backstage ingère `catalog/` tel quel — et qu'il survit à la plateforme. En entreprise,
+les équipes et les personnes ne s'écrivent pas à la main : elles se synchronisent depuis l'annuaire
+(Google Workspace, Cloud Identity).
 
 ---
 
@@ -154,6 +222,7 @@ flowchart LR
   subgraph dev["Developer Control Plane"]
     PORTAL["Portail\nFastAPI + HTMX"]
     GH["GitHub\nclaims/"]
+    CAT["Référentiel\ncatalog/ (Git)"]
   end
 
   subgraph delivery["Integration & Delivery"]
@@ -172,6 +241,8 @@ flowchart LR
     COST["OpenCost"]
   end
 
+  CAT --> PORTAL
+  CAT -->|"équipe propriétaire"| CI
   PORTAL -->|"pull request"| GH
   GH --> CI
   GH -->|"sync"| ARGO
@@ -182,8 +253,8 @@ flowchart LR
   TEAM --> COST
 {{< /mermaid >}}
 
-Le flux d'une demande tient en une phrase : **une équipe ouvre une pull request, Kyverno la valide
-en CI puis à l'admission, Argo CD la synchronise, kro crée les ressources Kubernetes et les objets Config
+Le flux d'une demande tient en une phrase : **une équipe déclarée dans le référentiel ouvre une
+pull request, Kyverno la valide en CI puis à l'admission, Argo CD la synchronise, kro crée les ressources Kubernetes et les objets Config
 Connector qui deviennent des ressources GCP, OpenCost en mesure le coût**. Personne n'écrit directement dans le cluster.
 
 ---
@@ -206,7 +277,7 @@ Connector qui deviennent des ressources GCP, OpenCost en mesure le coût**. Pers
 
 ## Où en est le dépôt
 
-La phase 1 est terminée : squelette du dépôt, 15 ADR, un `Makefile` qui expose toutes les
+La phase 1 est terminée : squelette du dépôt, 16 ADR, un `Makefile` qui expose toutes les
 commandes de la série, le **socle persistant** en Terraform (APIs, bucket de state versionné,
 secret vide, budget avec alertes à 50 / 90 / 100 %), et l'outillage pour développer avec Claude
 Code. La CI vérifie le code Terraform et les garde-fous à chaque push.
@@ -219,7 +290,7 @@ Prochains épisodes :
 | 2 | Resource | `make up`, `make down`, zéro orphelin — chiffres réels |
 | 3 | Integration & Delivery | GitOps : Terraform n'installe qu'une seule chose |
 | 4 | Security | Zéro secret, zéro clé |
-| 5 | Developer Control | kro + Config Connector : objets cloud et Kubernetes en self-service |
+| 5 | Developer Control | Référentiel d'équipes + kro + Config Connector : objets cloud et Kubernetes en self-service |
 | 6 | Observability | Combien coûte une équipe ? |
 | 7 | Developer Control | Un portail sans Backstage |
 | 8 | Tous | Bilan, chiffres, et version locale sans cloud |
@@ -234,5 +305,5 @@ captures — pas d'estimation.
 
 Ne commencez pas par le portail. Commencez par **le plus petit chemin qui traverse les cinq
 plans** : une demande en Git, une politique qui la valide, un outil qui la réconcilie, une
-ressource qui tourne, un coût qui s'affiche. Le portail n'est qu'un client de ce chemin — on peut
-le changer plus tard, pas le chemin.
+ressource qui tourne, un coût qui s'affiche. Le portail n'est qu'une étape de ce chemin — on peut
+le changer plus tard, pas le socle derrière.
