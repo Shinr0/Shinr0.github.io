@@ -1,0 +1,23 @@
+{{- /* Surcharge du partial du thème Toha : les articles annoncent leur propre titre, résumé,
+       visuel (hero.png/jpg) et URL, en absolu, pour les aperçus LinkedIn. Les autres pages
+       gardent les valeurs du site. */ -}}
+{{- $d := index site.Data site.Language.Lang -}}
+{{- $title := $d.site.openGraph.title | default site.Title -}}
+{{- $type := $d.site.openGraph.type | default "website" -}}
+{{- $description := $d.site.openGraph.description | default $d.site.description -}}
+{{- $image := ($d.site.openGraph.image | default $d.author.image) | absURL -}}
+{{- $url := $d.site.openGraph.url | default site.BaseURL -}}
+{{- if and .IsPage (eq .Section "posts") -}}
+  {{- $title = .Title -}}
+  {{- $type = "article" -}}
+  {{- $description = .Description | default (.Summary | plainify) | strings.TrimSpace -}}
+  {{- with .Resources.GetMatch "hero.{png,jpg}" -}}{{- $image = .Permalink -}}{{- end -}}
+  {{- $url = .Permalink -}}
+{{- end }}
+<!-- ============ open graph tags ========== -->
+<meta property="og:title" content="{{ $title }}"/>
+<meta property="og:type" content="{{ $type }}"/>
+<meta property="og:description" content="{{ $description }}"/>
+<meta property="og:image" content="{{ $image }}">
+<meta property="og:url" content="{{ $url }}">
+<meta name="twitter:card" content="summary_large_image">
