@@ -30,7 +30,7 @@ n'importe quel nouveau membre de l'équipe qui a les droits d'écriture :
 - comment **maîtriser ce qu'il coûte** en tokens, en local comme en CI ?
 
 Voici le cadre mis en place dans
-[`platform-project`](https://github.com/Shinr0/platform-project) pendant la phase 1, avec un
+[`bivouac`](https://github.com/Shinr0/bivouac) pendant la phase 1, avec un
 incident réel et un raté instructif.
 
 ---

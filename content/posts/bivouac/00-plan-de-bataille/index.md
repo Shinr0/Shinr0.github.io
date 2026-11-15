@@ -45,13 +45,13 @@ plus rien sur la facture le lendemain.
 Je le construis avec un agent IA, **Claude Code**, encadré par des règles et des garde-fous que je
 publie avec le code. Ce premier épisode pose le décor : d'où je pars, comment j'ai choisi les
 outils, et ce que la série va construire, un plan à la fois. Tout est public dans le dépôt
-[`platform-project`](https://github.com/Shinr0/platform-project).
+[`bivouac`](https://github.com/Shinr0/bivouac).
 
 ---
 
 ## Pourquoi repartir de zéro
 
-La [première version de ce projet](https://github.com/Shinr0/platform-project/tree/archive/v1-crossplane-forge) provisionnait
+La [première version de ce projet](https://github.com/Shinr0/bivouac/tree/archive/v1-crossplane-forge) provisionnait
 des VM Compute Engine avec Crossplane, déclenchées par un portail HTML et des GitHub Actions. Elle
 fonctionnait, mais elle avait trois défauts que je n'accepterais pas chez un client :
 
@@ -62,7 +62,7 @@ fonctionnait, mais elle avait trois défauts que je n'accepterais pas chez un cl
 
 La v1 est archivée dans une branche du dépôt. La v2 part d'un cahier des charges écrit avant la
 première ligne de code, avec des décisions tracées dans des
-[ADR](https://github.com/Shinr0/platform-project/tree/main/docs/adr).
+[ADR](https://github.com/Shinr0/bivouac/tree/main/docs/adr).
 
 ---
 
@@ -209,9 +209,30 @@ par des annotations préfixées `bivouac/`. Et le référentiel est **branché**
 
 Pourquoi ce format plutôt qu'un tableur, une CMDB ou une CRD dans le cluster ? Parce qu'il est
 versionné, validable, compris par l'outil que beaucoup de clients adopteront un jour — un client
-qui installe Backstage ingère `catalog/` tel quel — et qu'il survit à la plateforme. En entreprise,
-les équipes et les personnes ne s'écrivent pas à la main : elles se synchronisent depuis l'annuaire
-(Google Workspace, Cloud Identity).
+qui installe Backstage ingère `catalog/` tel quel — et qu'il survit à la plateforme.
+
+### Et en production ?
+
+Un dossier de fichiers YAML ne tient pas à l'échelle d'une entreprise : il faut chercher, croiser,
+filtrer, donner des droits, ouvrir l'outil à des non-développeurs. Il faut donc **une base de
+données** — mais pas comme source de vérité. Le bon modèle est hybride, chaque information venant
+de là où elle est juste :
+
+| Information | Source de vérité |
+|---|---|
+| Propriété : à quelle équipe appartient une application, son socle, ses dépendances | **Git**, dans un fichier au format Backstage **dans le dépôt de chaque application** |
+| Personnes : membres, managers, rattachements | **L'annuaire** (Google Workspace, Cloud Identity, Entra ID) ou le SIRH — jamais Git |
+| Astreinte | L'outil d'astreinte (PagerDuty, Opsgenie…) |
+| Données vivantes : déploiements, coûts, conformité | Collectées automatiquement par la plateforme |
+| Vue d'ensemble : recherche, requêtes, portail | **Une base de données**, alimentée par les sources ci-dessus |
+
+La base est un **index** : reconstruite à partir des sources, jamais éditée à la main. Une base
+qu'on remplit à la main, c'est une CMDB — et elles finissent toutes de la même façon : personne ne
+la met à jour, plus personne n'y croit. C'est exactement ainsi que fonctionne Backstage : des
+fichiers dans les dépôts, ingérés dans PostgreSQL.
+
+Dans Bivouac, je simplifie : un dossier `catalog/` central, des équipes fictives, pas de base. Pour
+un labo, c'est suffisant ; chez un client, c'est le modèle hybride.
 
 ---
 
