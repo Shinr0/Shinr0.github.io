@@ -206,7 +206,7 @@ Connector qui deviennent des ressources GCP, OpenCost en mesure le coût**. Pers
 
 ## Où en est le dépôt
 
-La phase 1 est terminée : squelette du dépôt, 21 ADR, un `Makefile` qui expose toutes les
+La phase 1 est terminée : squelette du dépôt, 15 ADR, un `Makefile` qui expose toutes les
 commandes de la série, le **socle persistant** en Terraform (APIs, bucket de state versionné,
 secret vide, budget avec alertes à 50 / 90 / 100 %), et l'outillage pour développer avec Claude
 Code. La CI vérifie le code Terraform et les garde-fous à chaque push.

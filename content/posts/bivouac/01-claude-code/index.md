@@ -51,9 +51,10 @@ semaine précédente, et lu la documentation de la ressource `google_billing_bud
 précis. C'est là qu'il a trouvé un piège documenté : avec des identifiants utilisateur, l'API
 Billing Budgets renvoie un 403 sans `billing_project` et `user_project_override` dans le provider.
 
-Le cadre écrit sert aussi à **changer d'avis proprement**. En cours de route, j'ai retiré les GPU,
-puis reporté l'IA intégrée à la plateforme. Chaque fois : un nouvel ADR qui remplace l'ancien, le
-plan révisé, le README aligné. Rien n'est réécrit en silence.
+Le cadre écrit sert aussi à **changer d'avis proprement** — c'est le propre d'un labo. Règle du
+dépôt : un ADR n'est jamais réécrit ni supprimé. Une décision révisée donne un nouvel ADR qui
+remplace l'ancien, et l'ancien ne change que sa ligne de statut. Le plan et le README suivent.
+Rien n'est réécrit en silence, et l'historique des essais se lit dans `docs/adr/`.
 
 ---
 
