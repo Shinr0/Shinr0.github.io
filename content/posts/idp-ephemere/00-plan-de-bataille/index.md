@@ -2,16 +2,16 @@
 title: "IDP éphémère #0 — Une plateforme qui s'autodétruit : le plan de bataille"
 date: 2026-11-15T09:00:00+01:00
 description: >
-  Je construis une Internal Developer Platform complète sur GCP, avec de l'IA par-dessus, qui
-  n'existe que le temps d'une démo. Point de départ : le landscape de platformengineering.org,
-  ses 5 plans, et un outil par plan.
+  Je construis une Internal Developer Platform complète sur GCP, qui n'existe que le temps d'une
+  démo, avec un agent IA comme co-développeur. Point de départ : le landscape de
+  platformengineering.org, ses 5 plans, et un outil par plan.
 tags:
   - Platform engineering
   - GCP
   - Kubernetes
   - GitOps
   - FinOps
-  - IA
+  - Claude Code
 categories:
   - Série IDP éphémère
 menu:
@@ -33,16 +33,17 @@ make up     # un projet GCP vide devient une plateforme en self-service
 make down   # tout disparaît — et un script échoue s'il reste un seul disque facturé
 ```
 
-Ce premier épisode pose le décor : d'où je pars, comment j'ai choisi les outils, et ce que la
-série va construire, un plan à la fois. Tout est public dans le dépôt
+Et je la construis avec un agent IA, **Claude Code**, encadré par des règles et des garde-fous
+que je publie avec le code. Ce premier épisode pose le décor : d'où je pars, comment j'ai choisi
+les outils, et ce que la série va construire, un plan à la fois. Tout est public dans le dépôt
 [`platform-project`](https://github.com/Shinr0/platform-project).
 
 ---
 
 ## Pourquoi repartir de zéro
 
-La [première version de ce projet]({{< ref "/posts/platform-engineering/index.md" >}}) provisionnait des VM
-Compute Engine avec Crossplane, déclenchées par un portail HTML et des GitHub Actions. Elle
+La [première version de ce projet]({{< ref "/posts/platform-engineering/index.md" >}}) provisionnait
+des VM Compute Engine avec Crossplane, déclenchées par un portail HTML et des GitHub Actions. Elle
 fonctionnait, mais elle avait trois défauts que je n'accepterais pas chez un client :
 
 - **un token GitHub dans le navigateur** ;
@@ -74,8 +75,9 @@ En le parcourant (mi-novembre 2026), j'ai compté environ **210 fiches outils** 
 jamais rien livrer.
 
 Et un détail m'a frappé : il existe une catégorie **« Copilot/Agent/LLM »**… et aucun outil n'y
-est rangé. L'IA est partout dans les discours sur le platform engineering, mais sa place *dans*
-la plateforme reste à dessiner. C'est précisément l'un des deux sujets de cette série.
+est rangé. L'IA est partout dans les discours sur le platform engineering, mais sa place reste à
+dessiner. Ma première réponse est pragmatique : avant de mettre de l'IA *dans* la plateforme, je
+m'en sers pour la **construire** — et je montre comment la garder sous contrôle.
 
 ---
 
@@ -86,28 +88,27 @@ chaque plan, pour qu'une équipe obtienne quelque chose d'utile de bout en bout 
 
 | Plan | Mes choix | Dans le landscape ? |
 |---|---|---|
-| Developer Control Plane | GitHub · API de plateforme **kro** · portail FastAPI + HTMX · **agent IA** | GitHub oui ; kro non (voisin : Crossplane) |
+| Developer Control Plane | GitHub · API de plateforme **kro** · portail FastAPI + HTMX | GitHub oui ; kro non (voisin : Crossplane) |
 | Integration & Delivery | **Terraform** · GitHub Actions · **Argo CD** | oui, les trois |
-| Resource Plane | **GKE** Standard zonal, nœuds spot · **Claude sur Vertex AI** derrière **LiteLLM** | Kubernetes oui ; Vertex AI et LiteLLM non |
-| Observability Plane | Prometheus / Grafana allégés · **OpenCost** · budgets GCP et LLM | Prometheus, Grafana oui ; OpenCost non (Kubecost oui) |
+| Resource Plane | **GKE** Standard zonal, nœuds spot | Kubernetes oui |
+| Observability Plane | Prometheus / Grafana allégés · **OpenCost** · budget GCP | Prometheus, Grafana oui ; OpenCost non (Kubecost oui) |
 | Security Plane | **Kyverno** · Google Secret Manager + External Secrets · **Workload Identity** | Kyverno, Secret Manager oui ; External Secrets non |
 
 Une partie de mes choix n'apparaît pas dans le landscape. C'est voulu, et chacun a son ADR :
 
 - **kro plutôt que Crossplane** pour l'API de plateforme : mes demandes composent des objets
-  Kubernetes (namespace, quotas, accès LLM), pas des ressources cloud. kro fait ça avec un seul
-  fichier par capacité ; Crossplane — que j'ai utilisé en v1 — reste le bon outil quand il faut
-  exposer du cloud en self-service.
+  Kubernetes (namespace, quotas, politiques réseau), pas des ressources cloud. kro fait ça avec un
+  seul fichier par capacité ; Crossplane — que j'ai utilisé en v1 — reste le bon outil quand il
+  faut exposer du cloud en self-service.
 - **OpenCost** est le cœur open source (CNCF) dont Kubecost est issu : suffisant pour attribuer
   un coût par équipe.
 - **External Secrets** n'est qu'un pont : la source de vérité reste Google Secret Manager, qui,
   lui, est bien dans le landscape.
-- **Vertex AI + LiteLLM** remplissent la case vide : une API compatible OpenAI, des clés par
-  équipe, des budgets plafonnés, et aucun GPU à maintenir.
 
 Et ce que j'exclus volontairement : **Backstage** (trop lourd pour une plateforme qui vit deux
-heures), les **orchestrateurs de plateforme** commerciaux, le **multi-cluster**, et — décision
-récente — **les GPU et modèles auto-hébergés** : tout passe par Vertex AI.
+heures), les **orchestrateurs de plateforme** commerciaux, le **multi-cluster** et les **GPU**.
+L'IA *intégrée* à la plateforme — un accès LLM par équipe et un assistant qui ouvre des pull
+requests — est **reportée en fin de série**, en option : elle n'a de sens qu'une fois le socle solide.
 
 ---
 
@@ -117,7 +118,6 @@ récente — **les GPU et modèles auto-hébergés** : tout passe par Vertex AI.
 flowchart LR
   subgraph dev["Developer Control Plane"]
     PORTAL["Portail\nFastAPI + HTMX"]
-    AGENT["Assistant IA"]
     GH["GitHub\nclaims/"]
   end
 
@@ -128,37 +128,24 @@ flowchart LR
   end
 
   subgraph resource["Resource Plane — GKE spot"]
-    TEAM["Espaces d'équipe"]
-    LLM["LiteLLM"]
-    VERTEX["Vertex AI\n(Claude)"]
+    TEAM["Espaces d'équipe\nquotas, réseau, RBAC"]
+  end
+
+  subgraph obs["Observability"]
+    COST["OpenCost"]
   end
 
   PORTAL -->|"pull request"| GH
-  AGENT -->|"pull request\naprès confirmation"| GH
   GH --> CI
   GH -->|"sync"| ARGO
   ARGO --> KRO
   KRO --> TEAM
-  KRO --> LLM
-  LLM --> VERTEX
+  TEAM --> COST
 {{< /mermaid >}}
 
-Le flux d'une demande tient en une phrase : **une équipe (ou l'assistant IA) ouvre une pull
-request, Kyverno la valide en CI puis à l'admission, Argo CD la synchronise, kro crée les
-ressources**. Personne — ni humain, ni IA — n'écrit directement dans le cluster.
-
----
-
-## Deux volets IA, une seule règle
-
-1. **LLM-as-a-Service** : une équipe demande un accès à Claude par un simple fichier YAML. Elle
-   reçoit une clé avec un budget mensuel plafonné, sans qu'aucun compte ne soit créé à la main.
-2. **Un assistant de plateforme** : un agent en langage naturel qui aide à formuler la demande.
-   Il peut tout lire, mais il n'a qu'un seul droit d'écriture : **ouvrir une pull request**,
-   après confirmation explicite de l'utilisateur.
-
-C'est, à mon sens, la bonne place de l'IA dans une IDP : **dans le Developer Control Plane, en
-amont de la revue**, pas derrière un accès admin au cluster.
+Le flux d'une demande tient en une phrase : **une équipe ouvre une pull request, Kyverno la valide
+en CI puis à l'admission, Argo CD la synchronise, kro crée les ressources, OpenCost en mesure le
+coût**. Personne n'écrit directement dans le cluster.
 
 ---
 
@@ -171,30 +158,32 @@ amont de la revue**, pas derrière un accès admin au cluster.
 - **Pas de PVC, pas de LoadBalancer, pas d'IP statique** : ce sont les ressources créées par des
   contrôleurs Kubernetes qui survivent le plus souvent à un `terraform destroy`.
 - **Coûts bornés par construction** : nœuds spot, cluster zonal couvert par le crédit gratuit
-  GKE, pas de GPU, budgets LLM par équipe.
+  GKE, pas de GPU.
+- **L'agent IA qui code travaille sous garde-fous** : règles écrites, actions sensibles soumises à
+  confirmation, revues automatiques à coût plafonné. C'est le sujet de l'épisode 1.
 
 ---
 
 ## Où en est le dépôt
 
-La phase 1 est terminée : squelette du dépôt, 17 ADR, un `Makefile` qui expose toutes les
-commandes de la série, et le **socle persistant** en Terraform (APIs, bucket de state versionné,
-secret vide, budget avec alertes à 50 / 90 / 100 %). La CI vérifie `terraform fmt` et
-`validate` à chaque push.
+La phase 1 est terminée : squelette du dépôt, 19 ADR, un `Makefile` qui expose toutes les
+commandes de la série, le **socle persistant** en Terraform (APIs, bucket de state versionné,
+secret vide, budget avec alertes à 50 / 90 / 100 %), et l'outillage pour développer avec Claude
+Code. La CI vérifie le code Terraform et les garde-fous à chaque push.
 
 Prochains épisodes :
 
 | # | Plan | Sujet |
 |---|---|---|
-| 1 | Resource | `make up`, `make down`, zéro orphelin — chiffres réels |
-| 2 | Integration & Delivery | GitOps : Terraform n'installe qu'une seule chose |
-| 3 | Security | Zéro secret, zéro clé |
-| 4 | Developer Control | Une API de plateforme avec kro, validée par Kyverno |
-| 5 | Resource (IA) | LLM-as-a-Service avec budget |
+| 1 | Outillage | Construire sa plateforme avec Claude Code, sans dérive ni facture surprise |
+| 2 | Resource | `make up`, `make down`, zéro orphelin — chiffres réels |
+| 3 | Integration & Delivery | GitOps : Terraform n'installe qu'une seule chose |
+| 4 | Security | Zéro secret, zéro clé |
+| 5 | Developer Control | Une API de plateforme avec kro, validée par Kyverno |
 | 6 | Observability | Combien coûte une équipe ? |
 | 7 | Developer Control | Un portail sans Backstage |
-| 8 | Developer Control (IA) | L'agent qui n'a le droit que d'ouvrir une PR |
-| 9 | Tous | Bilan, chiffres, et version locale sans cloud |
+| 8 | Tous | Bilan, chiffres, et version locale sans cloud |
+| bonus | Resource + Developer Control | L'IA dans la plateforme : LLM par équipe et assistant |
 
 Chaque épisode ne sera publié qu'une fois la brique construite et **mesurée** : durées, coûts,
 captures — pas d'estimation.
