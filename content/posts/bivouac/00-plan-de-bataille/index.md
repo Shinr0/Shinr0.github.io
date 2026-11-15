@@ -3,7 +3,7 @@ title: "Bivouac #0 — Un camp de base pour explorer le platform engineering sur
 date: 2026-11-15T09:00:00+01:00
 description: >
   Bivouac est un laboratoire pour rechercher et tester des concepts de platform engineering sur
-  GCP : une plateforme interne complète, montée en quelques minutes et démontée sans laisser de
+  GCP : une plateforme interne complète, montée à la demande et démontée sans laisser de
   trace. Point de départ : le landscape de platformengineering.org, ses 5 plans, et un outil par plan.
 tags:
   - Platform engineering
@@ -135,8 +135,8 @@ seulement ensuite le cluster.
 Quatre de mes choix n'apparaissent pas dans le landscape. C'est voulu, et chacun a son ADR :
 
 - **kro** et **Config Connector** : ci-dessus.
-- **OpenCost** est le cœur open source (CNCF) dont Kubecost est issu : suffisant pour attribuer
-  un coût par équipe.
+- **OpenCost** est le moteur de coûts open source issu de Kubecost, confié à la CNCF : suffisant
+  pour attribuer un coût par équipe.
 - **External Secrets** n'est qu'un pont : la source de vérité reste Google Secret Manager, qui,
   lui, est bien dans le landscape.
 
