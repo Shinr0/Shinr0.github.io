@@ -42,7 +42,7 @@ les outils, et ce que la série va construire, un plan à la fois. Tout est publ
 
 ## Pourquoi repartir de zéro
 
-La [première version de ce projet]({{< ref "/posts/platform-engineering/index.md" >}}) provisionnait
+La [première version de ce projet](https://github.com/Shinr0/platform-project/tree/archive/v1-crossplane-forge) provisionnait
 des VM Compute Engine avec Crossplane, déclenchées par un portail HTML et des GitHub Actions. Elle
 fonctionnait, mais elle avait trois défauts que je n'accepterais pas chez un client :
 
