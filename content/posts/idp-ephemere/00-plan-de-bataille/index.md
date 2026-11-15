@@ -88,9 +88,9 @@ chaque plan, pour qu'une équipe obtienne quelque chose d'utile de bout en bout 
 
 | Plan | Mes choix | Dans le landscape ? |
 |---|---|---|
-| Developer Control Plane | GitHub · API de plateforme **Crossplane v2** · portail FastAPI + HTMX | GitHub, Crossplane oui |
+| Developer Control Plane | GitHub · API de plateforme **kro** · portail FastAPI + HTMX | GitHub oui ; kro non |
 | Integration & Delivery | **Terraform** · GitHub Actions · **Argo CD** | oui, les trois |
-| Resource Plane | **GKE** Standard zonal, nœuds spot · objets GCP des équipes (bucket, compte de service) | Kubernetes oui |
+| Resource Plane | **GKE** Standard zonal, nœuds spot · **Config Connector** pour les objets GCP des équipes | Kubernetes oui ; Config Connector non |
 | Observability Plane | Prometheus / Grafana allégés · **OpenCost** · budget GCP | Prometheus, Grafana oui ; OpenCost non (Kubecost oui) |
 | Security Plane | **Kyverno** · Google Secret Manager + External Secrets · **Workload Identity** | Kyverno, Secret Manager oui ; External Secrets non |
 
@@ -98,18 +98,33 @@ Un choix mérite d'être détaillé : **l'API de plateforme**. Une équipe doit 
 « un espace de travail » et obtenir d'un coup des objets Kubernetes (namespace, quotas, droits)
 **et** des objets cloud (un bucket, un compte de service GCP qui n'accède qu'à ce bucket).
 
+J'ai comparé trois approches :
+
 - **Helm** sait générer des manifestes, mais ce n'est pas une API : pas d'objet « demande » typé
-  dans le cluster, pas de statut, et rien pour créer un bucket.
-- **kro**, plus récent et plus léger, ne compose que des objets Kubernetes ; pour le cloud, il lui
-  faut un second contrôleur, et son API est encore en alpha.
-- **Crossplane v2** fait les deux dans une même composition, il est mature et multi-cloud. Je
-  l'avais utilisé en v1 pour des VM ; la v2 en fait le cœur d'une vraie API de plateforme.
+  dans le cluster, pas de statut, et surtout **pas d'ordre** — une liaison IAM peut arriver avant
+  le compte de service qu'elle référence, et tout le monde attend que ça converge.
+- **Crossplane**, que j'avais utilisé en v1 pour des VM, fait tout : composition et providers
+  cloud. Mature et multi-cloud, mais c'est un écosystème entier de contrôleurs à maintenir, et son
+  provider GCP n'est pas celui de Google.
+- **kro au-dessus de Config Connector** sépare les rôles. **Config Connector**, l'opérateur de
+  Google, sait créer ~200 types de ressources GCP depuis Kubernetes ; c'est la couche primitive.
+  **kro** compose le catalogue par-dessus et crée les ressources **dans l'ordre de leurs
+  dépendances**. Des équipes l'utilisent ainsi en production : les deux s'empilent au lieu de
+  se concurrencer.
 
-Le revers : des ressources cloud créées par un contrôleur, c'est exactement ce qui survit à un
-`terraform destroy` mal ordonné. D'où une règle : `make down` supprime d'abord les demandes,
-**attend que Crossplane ait détruit les ressources GCP**, et seulement ensuite le cluster.
+J'ai retenu la troisième, natif GCP et au plus petit rayon d'impact, en connaissant ses limites :
+kro est encore pré-stable (version épinglée, une seule définition validée avant d'en écrire
+d'autres), il n'a pas de contrôle d'admission (Kyverno s'en charge), une demande bloquée nomme
+rarement la ressource fautive, et il n'existe pas d'équivalent de `terraform plan`.
 
-Deux de mes choix n'apparaissent pas dans le landscape. C'est voulu, et chacun a son ADR :
+Le revers commun à toutes ces options : des ressources cloud créées par un contrôleur, c'est
+exactement ce qui survit à un `terraform destroy` mal ordonné. D'où une règle : `make down`
+supprime d'abord les demandes, **attend que Config Connector ait supprimé les ressources GCP**, et
+seulement ensuite le cluster.
+
+Quatre de mes choix n'apparaissent pas dans le landscape. C'est voulu, et chacun a son ADR :
+
+- **kro** et **Config Connector** : ci-dessus.
 
 - **OpenCost** est le cœur open source (CNCF) dont Kubecost est issu : suffisant pour attribuer
   un coût par équipe.
@@ -135,11 +150,12 @@ flowchart LR
   subgraph delivery["Integration & Delivery"]
     CI["GitHub Actions\n+ Kyverno CLI"]
     ARGO["Argo CD"]
-    XP["Crossplane v2"]
+    KRO["kro"]
   end
 
   subgraph resource["Resource Plane — GKE spot"]
     TEAM["Espaces d'équipe\nnamespace, quotas, RBAC"]
+    KCC["Config Connector"]
     GCP["Objets GCP\nbucket, compte de service"]
   end
 
@@ -150,15 +166,16 @@ flowchart LR
   PORTAL -->|"pull request"| GH
   GH --> CI
   GH -->|"sync"| ARGO
-  ARGO --> XP
-  XP --> TEAM
-  XP --> GCP
+  ARGO --> KRO
+  KRO --> TEAM
+  KRO --> KCC
+  KCC --> GCP
   TEAM --> COST
 {{< /mermaid >}}
 
 Le flux d'une demande tient en une phrase : **une équipe ouvre une pull request, Kyverno la valide
-en CI puis à l'admission, Argo CD la synchronise, Crossplane crée les ressources Kubernetes et GCP,
-OpenCost en mesure le coût**. Personne n'écrit directement dans le cluster.
+en CI puis à l'admission, Argo CD la synchronise, kro crée les ressources Kubernetes et les objets Config
+Connector qui deviennent des ressources GCP, OpenCost en mesure le coût**. Personne n'écrit directement dans le cluster.
 
 ---
 
@@ -180,7 +197,7 @@ OpenCost en mesure le coût**. Personne n'écrit directement dans le cluster.
 
 ## Où en est le dépôt
 
-La phase 1 est terminée : squelette du dépôt, 20 ADR, un `Makefile` qui expose toutes les
+La phase 1 est terminée : squelette du dépôt, 21 ADR, un `Makefile` qui expose toutes les
 commandes de la série, le **socle persistant** en Terraform (APIs, bucket de state versionné,
 secret vide, budget avec alertes à 50 / 90 / 100 %), et l'outillage pour développer avec Claude
 Code. La CI vérifie le code Terraform et les garde-fous à chaque push.
@@ -193,7 +210,7 @@ Prochains épisodes :
 | 2 | Resource | `make up`, `make down`, zéro orphelin — chiffres réels |
 | 3 | Integration & Delivery | GitOps : Terraform n'installe qu'une seule chose |
 | 4 | Security | Zéro secret, zéro clé |
-| 5 | Developer Control | Une API de plateforme avec Crossplane v2 : objets cloud et Kubernetes en self-service |
+| 5 | Developer Control | kro + Config Connector : objets cloud et Kubernetes en self-service |
 | 6 | Observability | Combien coûte une équipe ? |
 | 7 | Developer Control | Un portail sans Backstage |
 | 8 | Tous | Bilan, chiffres, et version locale sans cloud |
