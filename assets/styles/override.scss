@@ -1,0 +1,13 @@
+/* Surcharges du thème Toha (point d'extension officiel : assets/styles/override.scss). */
+
+/* Bandeau d'article : le thème impose une hauteur fixe (400/300/200 px) en `cover`, ce qui rogne
+   les visuels 1200×630, et la carte de contenu chevauche le bas du bandeau de 4.5rem.
+   On affiche l'image entière à sa proportion (630/1200 = 52.5 % de la largeur), plus une bande
+   de 4.5rem sous l'image, de la couleur du sol des visuels, que la carte vient recouvrir. */
+body.kind-page .wrapper .content-section .content .read-area .hero-area {
+  height: auto;
+  padding-top: calc(52.5% + 4.5rem);
+  background-size: 100% auto;
+  background-position: top center;
+  background-color: #121c33;
+}
