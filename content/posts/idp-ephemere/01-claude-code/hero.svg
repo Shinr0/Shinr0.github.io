@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" role="img" aria-label="Un agent de code encadré par quatre garde-fous : règles, garde-fous exécutables, carte du dépôt, revues">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" role="img" aria-label="Un agent de code encadré par quatre garde-fous : règles, garde-fous exécutables, contexte économe, revues">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:#0c1222"/>
@@ -28,13 +28,13 @@
     <g fill="#e6eefa" font-size="17" font-weight="600">
       <text x="290" y="122">Règles écrites</text>
       <text x="910" y="122">Garde-fous testés</text>
-      <text x="290" y="272">Carte du dépôt</text>
+      <text x="290" y="272">Contexte économe</text>
       <text x="910" y="272">Revues à coût borné</text>
     </g>
     <g fill="#8aa4c4" font-size="13">
       <text x="290" y="145">CLAUDE.md · PLAN.md · ADR</text>
       <text x="910" y="145">permissions · hooks · make test</text>
-      <text x="290" y="295">Graphify · local · 0 token</text>
+      <text x="290" y="295">CLAUDE.md court · skills · deny</text>
       <text x="910" y="295">/code-review · CI OIDC sans clé</text>
     </g>
     <text x="600" y="355" fill="#8aa4c4" font-size="13">vite, mais sur les rails — et sans facture surprise</text>

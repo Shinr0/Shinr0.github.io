@@ -3,7 +3,7 @@ title: "IDP éphémère #1 — Construire sa plateforme avec Claude Code, sans d
 date: 2026-11-16T09:00:00+01:00
 description: >
   Un agent IA code vite. Le vrai sujet, c'est de le garder sur les rails et de maîtriser ce qu'il
-  coûte. Règles écrites, garde-fous exécutables, carte du dépôt avec Graphify, revues IA à coût
+  coûte. Règles écrites, garde-fous exécutables, contexte économe, revues IA à coût
   borné : le cadre que j'ai mis en place sur ma plateforme, avec ce qui a marché et ce qui a raté.
 tags:
   - Platform engineering
@@ -31,7 +31,7 @@ n'importe quel nouveau membre de l'équipe qui a les droits d'écriture :
 
 Voici le cadre mis en place dans
 [`platform-project`](https://github.com/Shinr0/platform-project) pendant la phase 1, avec un
-incident réel et deux ratés.
+incident réel et un raté instructif.
 
 ---
 
@@ -108,7 +108,7 @@ Claude Code lit un fichier `.claude/settings.json` **versionné dans le dépôt*
 - le hook `PreToolUse` reçoit la commande en JSON et renvoie le code `2` pour la bloquer, avec un
   message qui explique à l'agent quoi faire à la place.
 
-**Premier raté.** La première version du hook cherchait le mot `gcloud` n'importe où dans la
+**Le raté.** La première version du hook cherchait le mot `gcloud` n'importe où dans la
 commande. Quelques minutes plus tard, il a bloqué… le `git commit` de l'agent, parce que le message
 de commit parlait de `gcloud`. Pire : la commande qui devait corriger le hook contenait elle aussi
 le mot, et a été bloquée à son tour. L'agent a dû passer par ses outils d'édition de fichiers, que
@@ -121,37 +121,37 @@ de commit — et la CI les exécute à chaque push.
 
 ---
 
-## 4. Graphify : une carte du dépôt plutôt que des relectures
+## 4. Un contexte économe : chaque ligne se paie à chaque requête
 
-Un agent qui découvre un dépôt le lit : `grep`, puis fichier après fichier, à chaque session. Ce
-sont des tokens, donc du temps et de l'argent.
-[Graphify](https://github.com/Graphify-Labs/graphify) construit un **graphe de connaissances** du
-code (fonctions, ressources Terraform, variables, liens entre fichiers) en analysant la syntaxe
-avec tree-sitter, **localement, sans LLM ni télémétrie**. Installé « par projet », il ajoute :
+Ce qui coûte avec un agent, ce n'est pas tant ce qu'il écrit que ce qu'il **relit**. À chaque
+requête, il renvoie au modèle ses instructions, l'historique de la session et tout ce qu'il a lu.
+Avant d'ajouter un outil, j'ai donc réduit ce qu'il porte en permanence.
 
-- un *skill* `/graphify` dans `.claude/skills/` ;
-- une section dans `CLAUDE.md` : interroger le graphe (`graphify query`, `path`, `explain`) avant
-  de lire des fichiers bruts ;
-- des hooks qui rappellent à l'agent d'utiliser le graphe quand il s'apprête à faire un `grep`.
+**Un `CLAUDE.md` court et stable.** Ma première version disait : « Lire `PLAN.md` avant toute
+tâche ». Or `PLAN.md` fait 22 Ko — environ 380 lignes relues au début de chaque session, même pour
+corriger une faute de frappe. La version actuelle tient en 24 lignes : les règles non négociables,
+les commandes, et un pointeur — « la phase en cours est dans le tableau Avancement du README ; ne
+lis de `PLAN.md` que la section utile ». Et il change rarement, ce qui laisse le cache de prompt
+faire son travail.
 
-Sur mon dépôt :
+**Des consignes chargées seulement quand elles servent.**
 
-| Mesure | Résultat |
-|---|---|
-| Construction du graphe | ~1 s, **0 token** |
-| Taille | 98 nœuds, 114 liens, 15 communautés |
-| Réponse à « comment le budget GCP est configuré ? » | ~9 Ko, 26 nœuds |
-| Lire tout le Terraform, les scripts et le Makefile | ~13 Ko |
+- Des *skills* de projet pour les routines : `new-adr` (numéroter, rédiger, mettre l'index à jour)
+  et `close-phase` (critère d'acceptation, `make test`, README, mesures pour l'article). Seule leur
+  description d'une ligne est chargée en permanence ; le détail ne l'est qu'à l'usage.
+- À partir de la phase 2, un `CLAUDE.md` par dossier (`infra/`, `gitops/`, `portal/`) : les
+  conventions Terraform ne sont chargées que quand l'agent travaille dans `infra/`.
 
-Soyons honnêtes : **sur un dépôt de 58 fichiers, le gain est faible**. Le graphe devient
-intéressant quand le code grossit — ce qui arrive avec GitOps, les politiques et le portail. Je
-remesurerai à chaque épisode.
+**Des lectures interdites.** Une règle `permissions.deny` empêche de lire `.terraform/`, les states,
+les fichiers de lock, les `*.tfvars` et `.env`. Moins de tokens gaspillés sur des fichiers générés —
+et la garantie qu'un state Terraform ou un fichier de configuration local n'atterrit jamais dans le
+contexte d'un modèle.
 
-**Deuxième raté**, plus discret : la première construction a ignoré tous les fichiers Terraform —
-l'analyseur HCL est une option à installer (`graphifyy[terraform]`). Graphify l'a signalé par un
-simple avertissement. Un graphe incomplet donne des
-réponses fausses avec assurance. D'où une cible `make graph-install` qui installe la bonne
-variante, à une version épinglée.
+**De l'hygiène de session.** Une session par tâche, `/clear` entre deux, le mode plan pour
+démarrer une phase, `/context` et `/cost` pour voir ce qui pèse, et le modèle adapté à la tâche :
+Sonnet pour l'exécution courante, le plus gros modèle pour concevoir une phase. Le gain le plus
+important ne vient d'aucun outil : il vient de ne pas laisser une conversation s'allonger
+indéfiniment.
 
 ---
 
@@ -194,15 +194,16 @@ mesuré et publié dans l'épisode suivant.
 
 ## 6. Supply chain : l'outillage IA est aussi une dépendance
 
-Graphify et l'action de revue exécutent du code sur ma machine et dans ma CI. Trois règles :
+L'action de revue, les plugins, les serveurs MCP et les skills tiers exécutent du code sur ma
+machine ou dans ma CI. Trois règles :
 
-- **Épingler** : les actions GitHub par SHA de commit, le paquet Python par version exacte.
-- **Laisser mûrir** : aucune version publiée depuis moins de **7 jours**. Graphify publiait sa
-  version 0.9.109 la veille ; j'ai retenu la 0.9.104. Même règle pour l'action de revue (v1.0.268
-  plutôt que la dernière, sortie deux jours plus tôt).
-- **Vérifier la provenance** : le paquet PyPI s'appelle `graphifyy` (deux *y*). Avant
-  d'installer, l'agent a vérifié que ses métadonnées pointent bien vers le dépôt officiel. Un nom
-  de paquet inhabituel, c'est exactement là que se cache le typosquatting.
+- **Épingler** : les actions GitHub par SHA de commit, les paquets par version exacte.
+- **Laisser mûrir** : aucune version publiée depuis moins de **7 jours**. Pour l'action de revue,
+  j'ai retenu la v1.0.268 plutôt que la dernière, sortie deux jours plus tôt.
+- **Vérifier la provenance** : avant d'installer un paquet, contrôler que ses métadonnées pointent
+  vers le dépôt officiel. Un nom de paquet inhabituel, c'est exactement là que se cache le
+  typosquatting. Et regarder qui maintient l'outil : un projet de deux semaines porté par une seule
+  personne peut être excellent, mais il ne doit pas devenir une dépendance de votre chaîne.
 
 ---
 
@@ -216,7 +217,7 @@ comme tel :
 | Onboarding | Règles et plan écrits | `CLAUDE.md`, `PLAN.md`, ADR |
 | Moindre privilège | Confirmation sur tout ce qui détruit ou facture | `permissions.ask` |
 | Contrôles automatiques | Hooks, **testés comme du code** | `guard-gcloud.sh`, `make test` |
-| Documentation d'architecture | Une carte interrogeable | Graphify |
+| Documentation | Courte, à jour, chargée au bon moment | `CLAUDE.md`, skills, ADR |
 | Revue de code | Revue IA ciblée sur le contrat, à coût plafonné | `/code-review`, `claude-review.yml` |
 | Budget | Limite de dépense, déclenchements rares | workspace Anthropic, triggers |
 
