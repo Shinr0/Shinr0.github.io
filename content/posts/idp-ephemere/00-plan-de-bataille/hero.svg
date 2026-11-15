@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" role="img" aria-label="Les cinq plans d'une plateforme interne de développement, reliés par Git">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0c1222"/>
+      <stop offset="100%" style="stop-color:#1a2744"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#3d9ee5"/>
+      <stop offset="100%" style="stop-color:#7c5cbf"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="400" fill="url(#bg)"/>
+  <g font-family="system-ui,sans-serif" text-anchor="middle">
+    <g stroke="url(#accent)" stroke-width="1.5" fill="#101a30">
+      <rect x="70" y="110" width="190" height="130" rx="8"/>
+      <rect x="290" y="110" width="190" height="130" rx="8"/>
+      <rect x="510" y="110" width="190" height="130" rx="8"/>
+      <rect x="730" y="110" width="190" height="130" rx="8"/>
+      <rect x="950" y="110" width="190" height="130" rx="8"/>
+    </g>
+    <g fill="#e6eefa" font-size="17" font-weight="600">
+      <text x="165" y="160">Developer</text><text x="165" y="182">Control</text>
+      <text x="385" y="160">Integration</text><text x="385" y="182">&amp; Delivery</text>
+      <text x="605" y="171">Resource</text>
+      <text x="825" y="171">Observability</text>
+      <text x="1045" y="171">Security</text>
+    </g>
+    <g fill="#8aa4c4" font-size="13">
+      <text x="165" y="215">kro · portail · agent</text>
+      <text x="385" y="215">Terraform · Argo CD</text>
+      <text x="605" y="215">GKE spot · Vertex AI</text>
+      <text x="825" y="215">OpenCost · budgets</text>
+      <text x="1045" y="215">Kyverno · WI</text>
+    </g>
+    <path d="M70 290 H1140" stroke="#3d9ee5" stroke-width="1.5" stroke-dasharray="6 6" opacity="0.8"/>
+    <text x="605" y="318" fill="#8aa4c4" font-size="13">make up  ·  2 heures de démo  ·  make down  ·  zéro orphelin</text>
+    <text x="605" y="72" fill="#8aa4c4" font-size="14" letter-spacing="0.2em">UNE IDP ÉPHÉMÈRE, PLAN PAR PLAN — ÉPISODE 0</text>
+  </g>
+</svg>

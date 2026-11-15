@@ -22,6 +22,8 @@ menu:
     weight: 10
 ---
 
+> **Mise à jour — novembre 2026.** Cet article décrit la v1 du projet, désormais archivée. Le projet repart de zéro dans la série [« Une IDP éphémère, plan par plan »]({{< ref "/posts/idp-ephemere/00-plan-de-bataille/index.md" >}}).
+
 Le **platform engineering** consiste à traiter l’infrastructure et les outils comme un **produit** : une plateforme interne qui réduit la friction pour les équipes tout en gardant des garde-fous (sécurité, coûts, conformité).
 
 Cet article s’appuie sur **mon dépôt de travail [`platform-project`](https://github.com/Shinr0/platform-project)** : aujourd’hui, un **portail web** (fichier HTML servi en local) déclenche des **GitHub Actions** qui écrivent des **claims Crossplane** dans le repo ; **Argo CD** synchronise ces manifests vers le cluster, et **Crossplane** provisionne des VMs **Compute Engine** via le provider GCP Upbound. Demain : **autres compositions** (nouveaux services) et un **frontend** plus abouti, sans changer l’idée de fond — *GitOps + API plateforme contrôlée*.
