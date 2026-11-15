@@ -1,5 +1,5 @@
 ---
-title: "IDP éphémère #1 — Construire sa plateforme avec Claude Code, sans dérive ni facture surprise"
+title: "Bivouac #1 — Construire sa plateforme avec Claude Code, sans dérive ni facture surprise"
 date: 2026-11-16T09:00:00+01:00
 description: >
   Un agent IA code vite. Le vrai sujet, c'est de le garder sur les rails et de maîtriser ce qu'il
@@ -12,12 +12,12 @@ tags:
   - DevOps
   - Supply chain
 categories:
-  - Série IDP éphémère
+  - Série Bivouac
 menu:
   sidebar:
     name: "#1 Construire avec Claude Code"
-    identifier: idp-ephemere-01
-    parent: idp-ephemere
+    identifier: bivouac-01
+    parent: bivouac
     weight: 1
 ---
 

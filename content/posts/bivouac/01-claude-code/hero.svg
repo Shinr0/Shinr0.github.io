@@ -11,7 +11,7 @@
   </defs>
   <rect width="1200" height="400" fill="url(#bg)"/>
   <g font-family="system-ui,sans-serif" text-anchor="middle">
-    <text x="600" y="62" fill="#8aa4c4" font-size="14" letter-spacing="0.2em">UNE IDP ÉPHÉMÈRE, PLAN PAR PLAN — ÉPISODE 1</text>
+    <text x="600" y="62" fill="#8aa4c4" font-size="14" letter-spacing="0.2em">BIVOUAC · LABO DE PLATFORM ENGINEERING SUR GCP — ÉPISODE 1</text>
     <rect x="490" y="160" width="220" height="80" rx="40" fill="#101a30" stroke="url(#accent)" stroke-width="2"/>
     <text x="600" y="198" fill="#e6eefa" font-size="20" font-weight="600">Claude Code</text>
     <text x="600" y="222" fill="#8aa4c4" font-size="13">agent de code</text>

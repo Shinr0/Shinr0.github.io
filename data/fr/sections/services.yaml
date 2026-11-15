@@ -34,8 +34,8 @@ services:
   logo: /images/sections/skills/cloud.png
   pitch: "Vos développeurs attendent des jours qu'un ticket leur ouvre un environnement ? Je construis votre plateforme interne en **self-service** : ils provisionnent eux-mêmes leurs ressources via un portail ou un simple commit, dans un cadre maîtrisé (sécurité, conformité, coûts). Moins de tickets, moins d'attente — et je forme vos équipes pour qu'elles soient autonomes."
   technologies: [Crossplane, Argo CD, GitOps, Kubernetes]
-  url: /posts/idp-ephemere/00-plan-de-bataille/
-  urlText: "Suivre ma série : une IDP éphémère"
+  url: /posts/bivouac/00-plan-de-bataille/
+  urlText: "Découvrir Bivouac, mon labo de platform engineering"
 
 # Appel à l'action affiché sous les cartes : prise de rendez-vous Calendly
 cta:

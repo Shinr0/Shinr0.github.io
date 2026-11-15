@@ -1,10 +1,10 @@
 ---
-title: "IDP éphémère #0 — Une plateforme qui s'autodétruit : le plan de bataille"
+title: "Bivouac #0 — Un camp de base pour explorer le platform engineering sur GCP"
 date: 2026-11-15T09:00:00+01:00
 description: >
-  Je construis une Internal Developer Platform complète sur GCP, qui n'existe que le temps d'une
-  démo, avec un agent IA comme co-développeur. Point de départ : le landscape de
-  platformengineering.org, ses 5 plans, et un outil par plan.
+  Bivouac est un laboratoire pour rechercher et tester des concepts de platform engineering sur
+  GCP : une plateforme interne complète, montée en quelques minutes et démontée sans laisser de
+  trace. Point de départ : le landscape de platformengineering.org, ses 5 plans, et un outil par plan.
 tags:
   - Platform engineering
   - GCP
@@ -13,29 +13,38 @@ tags:
   - FinOps
   - Claude Code
 categories:
-  - Série IDP éphémère
+  - Série Bivouac
 menu:
   sidebar:
     name: "#0 Le plan de bataille"
-    identifier: idp-ephemere-00
-    parent: idp-ephemere
+    identifier: bivouac-00
+    parent: bivouac
     weight: 0
 ---
 
-Une plateforme interne de développement (IDP), ça coûte souvent plus cher à **entretenir** qu'à
-**héberger** : des clusters allumés en permanence, un portail que personne ne met à jour, des
-ressources cloud dont plus personne ne connaît le propriétaire.
+Tester un concept de platform engineering — une API de self-service, une politique de sécurité,
+un modèle de coûts par équipe — demande une vraie plateforme. Et une plateforme interne de
+développement (IDP), ça coûte cher à garder allumée : des clusters qui tournent entre deux essais,
+des ressources cloud oubliées, une facture qui grimpe pour un labo.
 
-Alors je fais l'inverse : je construis une IDP complète **qui n'existe que le temps d'une démo**.
+Alors j'ai monté **Bivouac** : un camp de base pour explorer le platform engineering sur GCP.
+Comme un bivouac en montagne, il se monte vite, on n'y emporte que l'essentiel, et on repart sans
+laisser de trace.
 
 ```bash
-make up     # un projet GCP vide devient une plateforme en self-service
+make up     # un projet GCP vide devient une plateforme en self-service, en quelques minutes
+            # … on teste un concept, on mesure, on casse, on recommence …
 make down   # tout disparaît — et un script échoue s'il reste un seul disque facturé
 ```
 
-Et je la construis avec un agent IA, **Claude Code**, encadré par des règles et des garde-fous
-que je publie avec le code. Ce premier épisode pose le décor : d'où je pars, comment j'ai choisi
-les outils, et ce que la série va construire, un plan à la fois. Tout est public dans le dépôt
+Bivouac sert à **rechercher et à tester** : comparer des approches sur du réel plutôt que sur des
+slides, mesurer ce qu'elles coûtent, et en garder une trace écrite (une décision documentée par
+choix). Il sert aussi de démonstration devant un client : vingt minutes avant le rendez-vous, et
+plus rien sur la facture le lendemain.
+
+Je le construis avec un agent IA, **Claude Code**, encadré par des règles et des garde-fous que je
+publie avec le code. Ce premier épisode pose le décor : d'où je pars, comment j'ai choisi les
+outils, et ce que la série va construire, un plan à la fois. Tout est public dans le dépôt
 [`platform-project`](https://github.com/Shinr0/platform-project).
 
 ---
