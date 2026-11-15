@@ -32,15 +32,15 @@ Comme un bivouac en montagne, il se monte vite, on n'y emporte que l'essentiel, 
 laisser de trace.
 
 ```bash
-make up     # un projet GCP vide devient une plateforme en self-service, en quelques minutes
+make up     # un projet GCP vide devient une plateforme en self-service
             # … on teste un concept, on mesure, on casse, on recommence …
 make down   # tout disparaît — et un script échoue s'il reste un seul disque facturé
 ```
 
 Bivouac sert à **rechercher et à tester** : comparer des approches sur du réel plutôt que sur des
 slides, mesurer ce qu'elles coûtent, et en garder une trace écrite (une décision documentée par
-choix). Il sert aussi de démonstration devant un client : vingt minutes avant le rendez-vous, et
-plus rien sur la facture le lendemain.
+choix). Il sert aussi de démonstration devant un client : montée juste avant le rendez-vous (objectif :
+moins de vingt minutes, mesuré à l'épisode 2), et plus rien sur la facture le lendemain.
 
 Je le construis avec un agent IA, **Claude Code**, encadré par des règles et des garde-fous que je
 publie avec le code. Ce premier épisode pose le décor : d'où je pars, comment j'ai choisi les
@@ -66,7 +66,7 @@ première ligne de code, avec des décisions tracées dans des
 
 ---
 
-## Le landscape : 5 plans, ~210 outils, et une case vide
+## Le landscape : 5 plans, ~210 outils
 
 [Le landscape de platformengineering.org](https://platformengineering.org/platform-tooling) classe
 les outils d'une IDP en **5 plans** :
@@ -115,10 +115,12 @@ J'ai comparé trois approches :
   cloud. Mature et multi-cloud, mais c'est un écosystème entier de contrôleurs à maintenir, et son
   provider GCP n'est pas celui de Google.
 - **kro au-dessus de Config Connector** sépare les rôles. **Config Connector**, l'opérateur de
-  Google, sait créer ~200 types de ressources GCP depuis Kubernetes ; c'est la couche primitive.
+  Google, crée et maintient des ressources GCP (buckets, comptes de service, IAM…) à partir
+  d'objets Kubernetes ; c'est la couche primitive.
   **kro** compose le catalogue par-dessus et crée les ressources **dans l'ordre de leurs
-  dépendances**. Des équipes l'utilisent ainsi en production : les deux s'empilent au lieu de
-  se concurrencer.
+  dépendances**. Ce modèle — l'opérateur du cloud comme couche primitive, kro comme catalogue —
+  tourne déjà en production chez certaines équipes (sur AWS, avec l'équivalent ACK) : les deux
+  s'empilent au lieu de se concurrencer.
 
 J'ai retenu la troisième, natif GCP et au plus petit rayon d'impact, en connaissant ses limites :
 kro est encore pré-stable (version épinglée, une seule définition validée avant d'en écrire
@@ -133,7 +135,6 @@ seulement ensuite le cluster.
 Quatre de mes choix n'apparaissent pas dans le landscape. C'est voulu, et chacun a son ADR :
 
 - **kro** et **Config Connector** : ci-dessus.
-
 - **OpenCost** est le cœur open source (CNCF) dont Kubecost est issu : suffisant pour attribuer
   un coût par équipe.
 - **External Secrets** n'est qu'un pont : la source de vérité reste Google Secret Manager, qui,
