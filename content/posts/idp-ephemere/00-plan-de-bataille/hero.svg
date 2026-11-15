@@ -26,7 +26,7 @@
       <text x="1045" y="171">Security</text>
     </g>
     <g fill="#8aa4c4" font-size="13">
-      <text x="165" y="215">kro · portail</text>
+      <text x="165" y="215">Crossplane · portail</text>
       <text x="385" y="215">Terraform · Argo CD</text>
       <text x="605" y="215">GKE spot</text>
       <text x="825" y="215">OpenCost · budget</text>

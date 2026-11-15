@@ -88,18 +88,29 @@ chaque plan, pour qu'une équipe obtienne quelque chose d'utile de bout en bout 
 
 | Plan | Mes choix | Dans le landscape ? |
 |---|---|---|
-| Developer Control Plane | GitHub · API de plateforme **kro** · portail FastAPI + HTMX | GitHub oui ; kro non (voisin : Crossplane) |
+| Developer Control Plane | GitHub · API de plateforme **Crossplane v2** · portail FastAPI + HTMX | GitHub, Crossplane oui |
 | Integration & Delivery | **Terraform** · GitHub Actions · **Argo CD** | oui, les trois |
-| Resource Plane | **GKE** Standard zonal, nœuds spot | Kubernetes oui |
+| Resource Plane | **GKE** Standard zonal, nœuds spot · objets GCP des équipes (bucket, compte de service) | Kubernetes oui |
 | Observability Plane | Prometheus / Grafana allégés · **OpenCost** · budget GCP | Prometheus, Grafana oui ; OpenCost non (Kubecost oui) |
 | Security Plane | **Kyverno** · Google Secret Manager + External Secrets · **Workload Identity** | Kyverno, Secret Manager oui ; External Secrets non |
 
-Une partie de mes choix n'apparaît pas dans le landscape. C'est voulu, et chacun a son ADR :
+Un choix mérite d'être détaillé : **l'API de plateforme**. Une équipe doit pouvoir demander
+« un espace de travail » et obtenir d'un coup des objets Kubernetes (namespace, quotas, droits)
+**et** des objets cloud (un bucket, un compte de service GCP qui n'accède qu'à ce bucket).
 
-- **kro plutôt que Crossplane** pour l'API de plateforme : mes demandes composent des objets
-  Kubernetes (namespace, quotas, politiques réseau), pas des ressources cloud. kro fait ça avec un
-  seul fichier par capacité ; Crossplane — que j'ai utilisé en v1 — reste le bon outil quand il
-  faut exposer du cloud en self-service.
+- **Helm** sait générer des manifestes, mais ce n'est pas une API : pas d'objet « demande » typé
+  dans le cluster, pas de statut, et rien pour créer un bucket.
+- **kro**, plus récent et plus léger, ne compose que des objets Kubernetes ; pour le cloud, il lui
+  faut un second contrôleur, et son API est encore en alpha.
+- **Crossplane v2** fait les deux dans une même composition, il est mature et multi-cloud. Je
+  l'avais utilisé en v1 pour des VM ; la v2 en fait le cœur d'une vraie API de plateforme.
+
+Le revers : des ressources cloud créées par un contrôleur, c'est exactement ce qui survit à un
+`terraform destroy` mal ordonné. D'où une règle : `make down` supprime d'abord les demandes,
+**attend que Crossplane ait détruit les ressources GCP**, et seulement ensuite le cluster.
+
+Deux de mes choix n'apparaissent pas dans le landscape. C'est voulu, et chacun a son ADR :
+
 - **OpenCost** est le cœur open source (CNCF) dont Kubecost est issu : suffisant pour attribuer
   un coût par équipe.
 - **External Secrets** n'est qu'un pont : la source de vérité reste Google Secret Manager, qui,
@@ -124,11 +135,12 @@ flowchart LR
   subgraph delivery["Integration & Delivery"]
     CI["GitHub Actions\n+ Kyverno CLI"]
     ARGO["Argo CD"]
-    KRO["kro"]
+    XP["Crossplane v2"]
   end
 
   subgraph resource["Resource Plane — GKE spot"]
-    TEAM["Espaces d'équipe\nquotas, réseau, RBAC"]
+    TEAM["Espaces d'équipe\nnamespace, quotas, RBAC"]
+    GCP["Objets GCP\nbucket, compte de service"]
   end
 
   subgraph obs["Observability"]
@@ -138,14 +150,15 @@ flowchart LR
   PORTAL -->|"pull request"| GH
   GH --> CI
   GH -->|"sync"| ARGO
-  ARGO --> KRO
-  KRO --> TEAM
+  ARGO --> XP
+  XP --> TEAM
+  XP --> GCP
   TEAM --> COST
 {{< /mermaid >}}
 
 Le flux d'une demande tient en une phrase : **une équipe ouvre une pull request, Kyverno la valide
-en CI puis à l'admission, Argo CD la synchronise, kro crée les ressources, OpenCost en mesure le
-coût**. Personne n'écrit directement dans le cluster.
+en CI puis à l'admission, Argo CD la synchronise, Crossplane crée les ressources Kubernetes et GCP,
+OpenCost en mesure le coût**. Personne n'écrit directement dans le cluster.
 
 ---
 
@@ -156,7 +169,8 @@ coût**. Personne n'écrit directement dans le cluster.
 - **Rien ne survit à `make down`**, hors un socle persistant quasi gratuit (bucket de state,
   secret, budget). Toute ressource GCP porte un label qui permet de traquer les orphelins.
 - **Pas de PVC, pas de LoadBalancer, pas d'IP statique** : ce sont les ressources créées par des
-  contrôleurs Kubernetes qui survivent le plus souvent à un `terraform destroy`.
+  contrôleurs Kubernetes qui survivent le plus souvent à un `terraform destroy`. Seule exception :
+  les objets GCP des équipes, choisis rapides et quasi gratuits, et supprimés avant le cluster.
 - **Coûts bornés par construction** : nœuds spot, cluster zonal couvert par le crédit gratuit
   GKE, pas de GPU.
 - **L'agent IA qui code travaille sous garde-fous** : règles écrites, actions sensibles soumises à
@@ -166,7 +180,7 @@ coût**. Personne n'écrit directement dans le cluster.
 
 ## Où en est le dépôt
 
-La phase 1 est terminée : squelette du dépôt, 19 ADR, un `Makefile` qui expose toutes les
+La phase 1 est terminée : squelette du dépôt, 20 ADR, un `Makefile` qui expose toutes les
 commandes de la série, le **socle persistant** en Terraform (APIs, bucket de state versionné,
 secret vide, budget avec alertes à 50 / 90 / 100 %), et l'outillage pour développer avec Claude
 Code. La CI vérifie le code Terraform et les garde-fous à chaque push.
@@ -179,7 +193,7 @@ Prochains épisodes :
 | 2 | Resource | `make up`, `make down`, zéro orphelin — chiffres réels |
 | 3 | Integration & Delivery | GitOps : Terraform n'installe qu'une seule chose |
 | 4 | Security | Zéro secret, zéro clé |
-| 5 | Developer Control | Une API de plateforme avec kro, validée par Kyverno |
+| 5 | Developer Control | Une API de plateforme avec Crossplane v2 : objets cloud et Kubernetes en self-service |
 | 6 | Observability | Combien coûte une équipe ? |
 | 7 | Developer Control | Un portail sans Backstage |
 | 8 | Tous | Bilan, chiffres, et version locale sans cloud |
