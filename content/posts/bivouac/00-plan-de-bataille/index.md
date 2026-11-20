@@ -1,6 +1,7 @@
 ---
 title: "Bivouac #0 — Un camp de base pour explorer le platform engineering sur GCP"
 date: 2026-11-15T09:00:00+01:00
+weight: 1
 description: >
   Bivouac est un laboratoire pour rechercher et tester des concepts de platform engineering sur
   GCP : une plateforme interne complète, montée à la demande et démontée sans laisser de
@@ -19,7 +20,7 @@ menu:
     name: "#0 Le plan de bataille"
     identifier: bivouac-00
     parent: bivouac
-    weight: 0
+    weight: 1
 ---
 
 Tester un concept de platform engineering — une API de self-service, une politique de sécurité,

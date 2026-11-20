@@ -20,7 +20,7 @@ experiences:
     # company overview
     overview: Mission chez U TECH dans l'équipe Factory IAAS
   positions:
-  - designation: Consultant DevOps Cloud
+  - designation: Consultant DevOps Cloud | Platform Engineer
     start: Mars 2023
     # don't provide end date if you are currently working there. It will be replaced by "Present"
     # end: Dec 2020
@@ -29,6 +29,7 @@ experiences:
     - Déploiement d'infrastructure sur GCP avec Terraform et des outils de CI
     - Développement de job CICD sur Github Action et Jenkins
     - Déploiement de la solution AWX sur GKE / Kubernetes
+    - Intégration d'agent IA dans la plateforme IAAS
     - Production et configuration de golden images Linux et Windows avec Packer / Ansible et Cloud Init
     - Maintien en condition opérationnelle de la stack IaaS sur Cloud Function / PubSub / Ansible AWX
     - Mise en place de la stack de monitoring de la Plateforme IAAS

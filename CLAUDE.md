@@ -29,7 +29,9 @@ Site vitrine Hugo (thème Toha, module Hugo), en français.
 - Un dossier par épisode `NN-slug/` (page bundle) : `index.md`, `hero.png`, `cover.svg`.
 - Front matter : `title: "Bivouac #N — …"`, `description` (affichée sur la carte et dans l'aperçu
   LinkedIn), `categories: [Série Bivouac]`, `menu.sidebar` avec `parent: bivouac`,
-  `identifier: bivouac-NN`, `weight: N`.
+  `identifier: bivouac-NN`, `weight: N+1` dans `menu.sidebar` **et** à la racine du front matter
+  (jamais 0 : Hugo classe un poids nul en dernier). Le premier fixe la navigation précédent/suivant,
+  le second l'ordre des cartes (épisode 0 à gauche).
 - Visuel : `scripts/bivouac-cover.py <dossier> --label "ÉPISODE N · …" --subtitle "…" --caption "…"`
   génère `cover.svg` et `hero.png` (1200×630, requiert ImageMagick). Pas de `hero.svg` : il s'affiche
   mal dans les cartes.

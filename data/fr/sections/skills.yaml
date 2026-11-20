@@ -35,6 +35,12 @@ skills:
   categories: ["container"]
   url: "https://kubernetes.io/"
 
+- name: Intelligence Artificielle & intégration d'agents IA
+  logo: /images/sections/skills/ai.svg
+  summary: "Conception et intégration d'agents d'intelligence artificielle dans des plateformes existantes pour automatiser des tâches complexes et améliorer la prise de décision."
+  categories: ["basic"]
+  url: "https://www.tensorflow.org/"
+
 - name: Développement Python
   logo: /images/sections/skills/python.svg
   summary: "Je l'utilise comme langage principal pour le développement de mes programmes. En capacité d'écrire des programmes évolutifs, testables (pytest) et maintenables."

@@ -20,6 +20,11 @@ services:
   pitch: "Des environnements créés à la main, impossibles à reproduire et coûteux à maintenir ? Je conçois et déploie votre infrastructure GCP en **Infrastructure as Code** : chaque ressource est versionnée, revue et déployée automatiquement. Vous gagnez des environnements reproductibles à la demande, un historique complet des changements et une facture Cloud sous contrôle. *Certifié Google Professional Cloud Architect.*"
   technologies: [Terraform, GCP, Packer, Cloud-init, Ansible]
 
+- name: Intelligence Artificielle & intégration d'agents IA
+  logo: /images/sections/skills/ai.png
+  pitch: "Je conçois et intègre des agents d'intelligence artificielle dans vos plateformes existantes, automatisant des tâches complexes et améliorant la prise de décision. Vous bénéficiez d'une **productivité accrue** et d'une **expérience utilisateur enrichie** grâce à l'IA."
+  technologies: [Python, Vertex AI, Claude Code, API IA, LangFlow]
+
 - name: Kubernetes & conteneurisation
   logo: /images/sections/skills/kubernetes.png
   pitch: "Je conteneurise vos applications et les déploie sur Kubernetes selon les bonnes pratiques : haute disponibilité, mises à jour sans coupure, montée en charge automatique. J'en assure aussi l'exploitation au quotidien — supervision, sauvegardes, montées de version du cluster — pour que vos équipes restent concentrées sur leur produit. *Certifié CKA (Certified Kubernetes Administrator).*"

@@ -1,10 +1,11 @@
 ---
 title: "Bivouac #1 — Construire sa plateforme avec Claude Code, sans dérive ni facture surprise"
 date: 2026-11-16T09:00:00+01:00
+weight: 2
 description: >
-  Un agent IA code vite. Le vrai sujet, c'est de le garder sur les rails et de maîtriser ce qu'il
-  coûte. Règles écrites, garde-fous exécutables, contexte économe, revues IA à coût
-  borné : le cadre que j'ai mis en place sur ma plateforme, avec ce qui a marché et ce qui a raté.
+  Un agent IA code vite. Le plus dur est de le garder dans le périmètre et de maîtriser ce qu'il
+  coûte. Règles écrites, garde-fous testés, coût mesuré : le cadre mis en place sur Bivouac,
+  avec ce qui a marché et ce qui a raté.
 tags:
   - Platform engineering
   - Claude Code
@@ -18,72 +19,38 @@ menu:
     name: "#1 Construire avec Claude Code"
     identifier: bivouac-01
     parent: bivouac
-    weight: 1
+    weight: 2
 ---
 
-Ma plateforme est développée avec **Claude Code**, l'agent de code d'Anthropic. La question n'est
-plus de savoir s'il sait écrire du Terraform — il sait. La question, c'est celle qu'on se pose pour
-n'importe quel nouveau membre de l'équipe qui a les droits d'écriture :
+Je développe [Bivouac](https://github.com/Shinr0/bivouac) avec Claude Code, l'agent de code
+d'Anthropic. Qu'il sache écrire du Terraform, ce n'est plus vraiment la question. Ce qui
+m'intéresse, ce sont les questions qu'on se pose pour toute nouvelle recrue qui a les droits
+d'écriture : comment l'empêcher de sortir du périmètre, de casser ou de facturer quelque chose sans
+mon accord, et combien elle coûte.
 
-- comment **l'empêcher de dériver** (anticiper, improviser, sortir du périmètre) ?
-- comment **l'empêcher de casser ou de facturer** quelque chose sans accord ?
-- comment **maîtriser ce qu'il coûte** en tokens, en local comme en CI ?
+Voici ce que j'ai mis en place pendant la phase 1.
 
-Voici le cadre mis en place dans
-[`bivouac`](https://github.com/Shinr0/bivouac) pendant la phase 1, avec un
-incident réel et un raté instructif.
+## 1. Des règles écrites
 
----
+L'agent travaille à partir de trois sources :
 
-## 1. Un cadre écrit avant la première ligne de code
+- `PLAN.md` : la spécification, découpée en phases avec un critère d'acceptation chacune ;
+- `CLAUDE.md` : les règles du projet (une phase à la fois, versions épinglées et vérifiées dans la
+  doc officielle, aucun secret, label obligatoire sur les ressources GCP, jamais de
+  `terraform apply` sans demande explicite) ;
+- `docs/adr/` : une décision par fichier, avec ce qui a été écarté et pourquoi.
 
-L'agent lit trois choses à chaque session :
+Concrètement, l'agent ne choisit pas une version d'outil de mémoire : il la vérifie dans le
+registre officiel et lit la documentation correspondant à ce tag.
 
-| Fichier | Rôle |
-|---|---|
-| `PLAN.md` | La spécification et des **phases** numérotées, avec un critère d'acceptation chacune |
-| `CLAUDE.md` | Les **règles du projet** : une phase à la fois, versions épinglées vérifiées dans la doc officielle, aucun secret, label obligatoire sur les ressources GCP, jamais de `terraform apply` sans demande explicite |
-| `docs/adr/` | Une **décision par fichier** : ce qui est choisi, ce qui est écarté, pourquoi |
+Les ADR servent aussi à changer d'avis proprement, ce qui arrive souvent dans un labo. Un ADR n'est
+jamais réécrit ni supprimé : une décision révisée donne un nouvel ADR, et l'ancien ne change que sa
+ligne de statut. L'historique des essais reste lisible dans `docs/adr/`.
 
-L'effet est concret. Quand l'agent a écrit la couche Terraform de bootstrap, il n'a pas « choisi »
-une version du provider Google : il a interrogé le registre Terraform, trouvé `8.10.0` publiée la
-semaine précédente, et lu la documentation de la ressource `google_billing_budget` à ce tag
-précis. C'est là qu'il a trouvé un piège documenté : avec des identifiants utilisateur, l'API
-Billing Budgets renvoie un 403 sans `billing_project` et `user_project_override` dans le provider.
+## 2. Des garde-fous exécutables, et testés
 
-Le cadre écrit sert aussi à **changer d'avis proprement** — c'est le propre d'un labo. Règle du
-dépôt : un ADR n'est jamais réécrit ni supprimé. Une décision révisée donne un nouvel ADR qui
-remplace l'ancien, et l'ancien ne change que sa ligne de statut. Le plan et le README suivent.
-Rien n'est réécrit en silence, et l'historique des essais se lit dans `docs/adr/`.
-
----
-
-## 2. L'incident : le mauvais compte cloud
-
-Avant tout déploiement, un doute m'a pris : l'agent n'allait-il pas utiliser le compte de mon
-client ? Je lui ai demandé de vérifier. Résultat : la configuration `gcloud` globale de ma machine
-— CLI **et** identifiants par défaut utilisés par Terraform — était bien connectée au **compte d'un
-client**. L'agent, lui, ne l'avait pas signalé de lui-même. Je suis consultant ; c'est le cas de
-beaucoup de postes de travail.
-
-Rien n'avait encore été exécuté. Mais une seule règle dans `CLAUDE.md` (« utilise mon compte
-perso ») n'aurait pas suffi : une règle écrite se respecte *en général*, un garde-fou s'applique
-*toujours*. Trois couches ont été ajoutées :
-
-1. **Une configuration `gcloud` isolée pour le projet**. Le `Makefile` exporte `CLOUDSDK_CONFIG`
-   et `GOOGLE_APPLICATION_CREDENTIALS` vers un dossier dédié. La configuration globale (celle du
-   client) n'est ni lue ni modifiée.
-2. **Une vérification d'identité dans les scripts**. Avant toute action GCP, ils comparent le
-   compte de la CLI *et* celui des identifiants applicatifs (via `tokeninfo`) au compte attendu,
-   ainsi que le projet actif. Au moindre écart, ils s'arrêtent.
-3. **Un hook Claude Code**. Avant chaque commande shell de l'agent, un script bloque tout appel à
-   `gcloud` qui ne passe pas par la configuration isolée.
-
----
-
-## 3. Des garde-fous exécutables… et testés
-
-Claude Code lit un fichier `.claude/settings.json` **versionné dans le dépôt**. Deux mécanismes :
+Une règle écrite est respectée la plupart du temps. Pour ce qui doit l'être à chaque fois, Claude
+Code lit un fichier `.claude/settings.json` versionné dans le dépôt :
 
 ```json
 {
@@ -104,123 +71,123 @@ Claude Code lit un fichier `.claude/settings.json` **versionné dans le dépôt*
 }
 ```
 
-- `permissions.ask` : tout ce qui crée, détruit, facture ou publie exige **ma confirmation**, et
-  cette liste est partagée avec le code, pas cachée dans ma configuration personnelle.
-- le hook `PreToolUse` reçoit la commande en JSON et renvoie le code `2` pour la bloquer, avec un
-  message qui explique à l'agent quoi faire à la place.
+Tout ce qui crée, détruit, facture ou publie me demande une confirmation. Le hook, lui, reçoit
+chaque commande shell de l'agent avant exécution et refuse tout appel à `gcloud` qui ne passe pas
+par la configuration isolée du projet.
 
-**Le raté.** La première version du hook cherchait le mot `gcloud` n'importe où dans la
-commande. Quelques minutes plus tard, il a bloqué… le `git commit` de l'agent, parce que le message
-de commit parlait de `gcloud`. Pire : la commande qui devait corriger le hook contenait elle aussi
-le mot, et a été bloquée à son tour. L'agent a dû passer par ses outils d'édition de fichiers, que
-le hook ne surveille pas.
+## 3. Ce que coûte l'agent
 
-La correction : ne détecter `gcloud` qu'en **position de commande** (début de ligne, après `;`,
-`&&`, `|`, `$(`, `sudo`, `env`…). Et surtout, la leçon : **un garde-fou est du code, il se teste**.
-`make test` rejoue désormais 12 cas — 6 doivent être bloqués, 6 autorisés, dont le fameux message
-de commit — et la CI les exécute à chaque push.
+### Où part l'argent
 
----
+Le modèle n'a pas de mémoire. À chaque requête, Claude Code lui renvoie tout le contexte : prompt
+système, outils, `CLAUDE.md`, historique, fichiers lus et sorties de commandes. Il y a donc trois
+lignes sur la facture, à des prix très différents (par million de tokens) :
 
-## 4. Un contexte économe : chaque ligne se paie à chaque requête
+| | Opus 5.5 | Sonnet 5.5 |
+|---|---|---|
+| Contexte relu depuis le cache | 0,20 $ | 0,10 $ |
+| Contexte neuf (écrit en cache, durée d'une heure) | 8 $ | 4 $ |
+| Sortie (réponse et réflexion du modèle) | 20 $ | 10 $ |
 
-Ce qui coûte avec un agent, ce n'est pas tant ce qu'il écrit que ce qu'il **relit**. À chaque
-requête, il renvoie au modèle ses instructions, l'historique de la session et tout ce qu'il a lu.
-Avant d'ajouter un outil, j'ai donc réduit ce qu'il porte en permanence.
+J'ai mesuré la session qui a servi à écrire cet article : 29 requêtes à Opus 5.5, coût recalculé
+au prix catalogue (avec un abonnement, c'est la part du forfait consommée) :
 
-**Un `CLAUDE.md` court et stable.** Ma première version disait : « Lire `PLAN.md` avant toute
-tâche ». Or `PLAN.md` dépasse 20 Ko — près de 400 lignes relues au début de chaque session, même pour
-corriger une faute de frappe. La version actuelle tient en 24 lignes : les règles non négociables,
-les commandes, et un pointeur — « la phase en cours est dans le tableau Avancement du README ; ne
-lis de `PLAN.md` que la section utile ». Et il change rarement, ce qui laisse le cache de prompt
-faire son travail.
+| Poste | Tokens | Coût | Part |
+|---|---|---|---|
+| Contexte relu depuis le cache | 2 283 538 | 0,46 $ | 25 % |
+| Contexte neuf | 81 442 | 0,65 $ | 35 % |
+| Sortie | 35 954 | 0,72 $ | 39 % |
 
-**Des consignes chargées seulement quand elles servent.**
+Deux enseignements. Le contexte relu représente 63 fois plus de tokens que la sortie, mais le cache
+le rend bon marché : sans lui, ces 2,4 millions de tokens auraient coûté environ 9,40 `$` au lieu de
+1,83 `$`. Et une fois le cache en place, la sortie devient le premier poste : 1,5 % des tokens, 39 %
+du coût.
 
-- Des *skills* de projet pour les routines : `new-adr` (numéroter, rédiger, mettre l'index à jour)
-  et `close-phase` (critère d'acceptation, `make test`, README, mesures pour l'article). Seule leur
-  description d'une ligne est chargée en permanence ; le détail ne l'est qu'à l'usage.
-- À partir de la phase 2, un `CLAUDE.md` par dossier (`infra/`, `gitops/`, `portal/`) : les
-  conventions Terraform ne sont chargées que quand l'agent travaille dans `infra/`.
+D'où trois leviers, dans cet ordre.
 
-**Des lectures interdites.** Une règle `permissions.deny` empêche de lire `.terraform/`, les states,
-les fichiers de lock, les `*.tfvars` et `.env`. Moins de tokens gaspillés sur des fichiers générés —
-et la garantie qu'un state Terraform ou un fichier de configuration local n'atterrit jamais dans le
-contexte d'un modèle.
+### 1. Ne pas casser le cache
 
-**De l'hygiène de session.** Une session par tâche, `/clear` entre deux, le mode plan pour
-démarrer une phase, `/context` et `/cost` pour voir ce qui pèse, et le modèle adapté à la tâche :
-Sonnet pour l'exécution courante, le plus gros modèle pour concevoir une phase. Le gain le plus
-important ne vient d'aucun outil : il vient de ne pas laisser une conversation s'allonger
-indéfiniment.
+- Choisir le modèle en début de session et ne plus en changer : chaque modèle a son propre cache.
+  Sonnet pour exécuter, Opus pour concevoir (le réglage `opusplan` fait ce partage tout seul).
+- Enchaîner plutôt qu'étaler : passé la durée de vie du cache, tout le contexte est repayé au prix
+  fort.
+- Modifier `CLAUDE.md` en cours de session ne casse rien : la nouvelle version est prise en compte
+  au prochain `/clear`.
 
----
+### 2. Faire écrire moins
 
-## 5. Des revues IA à coût borné
+- Régler l'effort (`/effort`) selon la tâche : la réflexion du modèle est facturée comme de la
+  sortie, même quand elle n'est pas affichée.
+- Exécuter avec Sonnet : chaque token de sortie coûte deux fois moins qu'avec Opus.
+- Préférer des modifications ciblées à des fichiers réécrits en entier, et des réponses courtes.
 
-Deux niveaux, du moins cher au plus cher.
+### 3. Faire lire moins
 
-**En local, avant chaque push : `/code-review`.** Une commande intégrée à Claude Code qui relit le
-diff de la branche. Aucun coût de CI ; le réflexe est inscrit dans `CLAUDE.md`.
+Chaque fichier lu est payé une fois au prix fort, puis relu à chaque requête jusqu'à la fin de la
+session.
 
-**En CI : [`claude-code-action`](https://github.com/anthropics/claude-code-action)**, avec un
-workflow dont chaque ligne est un levier de coût :
+- **Un `CLAUDE.md` court.** Ma première version demandait de lire `PLAN.md` (416 lignes, 26 Ko)
+  avant toute tâche. Le `CLAUDE.md` actuel fait 28 lignes et pointe vers la section utile du plan.
+- **Le reste à la demande.** Les routines (créer un ADR, clore une phase, écrire cet article) sont
+  des skills : seule leur description d'une ligne est chargée en permanence, pas leurs 5,2 Ko de
+  détail. À partir de la phase 2, chaque dossier aura son `CLAUDE.md`, chargé seulement quand
+  l'agent y travaille.
+- **Des lectures interdites.** Six règles `permissions.deny` excluent `.terraform/`, les states, le
+  fichier de lock, les `*.tfvars` et `.env`. Elles évitent des fichiers générés sans intérêt et
+  réduisent le risque de voir un secret local arriver dans le contexte, sans le supprimer : elles
+  bloquent `cat` sur ces fichiers, pas un `grep -r` ni un script qui les ouvre lui-même.
+- **Des sorties de commandes compactes.** Dans ma configuration personnelle, un hook fait passer
+  les commandes shell de l'agent par RTK, qui compacte leur sortie. D'après `rtk gain`, la sortie
+  de 1 101 commandes a été réduite de 21,7 % en tokens. Pour la même raison, le projet n'utilise
+  aucun serveur MCP : `gh`, `terraform` et `make` suffisent.
+- **Les lectures volumineuses dans un sous-agent.** Pour vérifier ce que cet article dit de Claude
+  Code, un sous-agent sur Haiku a lu la documentation officielle. Ma session n'a reçu que son
+  rapport, et ces lectures ont coûté quelques centimes.
+- **Une session par tâche**, `/clear` entre deux, et le mode plan pour démarrer une phase : une
+  mauvaise direction corrigée sur le plan évite de réécrire puis relire des fichiers.
 
-| Levier | Réglage |
-|---|---|
-| Quand | À l'ouverture d'une PR prête, au passage brouillon → prête, ou sur le label `ai-review`. **Jamais à chaque push.** |
-| Quoi | Le diff (`gh pr diff`) ; les autres fichiers seulement s'il y fait référence |
-| Combien | `--max-turns 12`, `timeout-minutes: 10`, `concurrency` qui annule une revue obsolète |
-| Avec quel modèle | Sonnet, pas le plus gros modèle |
-| Pour qui | PR du dépôt uniquement, jamais depuis un fork |
-| Sur quoi | Les **dérives par rapport à `CLAUDE.md`** d'abord (version non épinglée, secret, ressource sans label, travail d'une phase future), puis les bugs ; pas le style, ni ce que la CI vérifie déjà |
+### Mesurer
 
-Le dernier levier est le plus rentable : la revue ne cherche pas « tout ce qui pourrait être
-mieux », elle vérifie **le contrat du dépôt**. Des remarques moins nombreuses, plus utiles, et
-moins de tokens.
+`/context` montre ce qui occupe la fenêtre, `/usage` les tokens par poste. Le tableau ci-dessus
+vient du journal de session de Claude Code, et il m'a appris quelque chose : je pensais que le
+contexte relu était le premier poste, c'était la sortie.
 
-**Aucune clé API stockée.** L'action sait s'authentifier par *Workload Identity Federation* : le
-jeton OIDC que GitHub délivre au workflow est échangé contre un jeton Anthropic de courte durée,
-lié à un compte de service et à une règle qui ne reconnaît que ce dépôt. C'est exactement le
-principe que j'applique côté GCP avec Workload Identity (aucune clé de compte de service) ; il
-aurait été incohérent de stocker un secret longue durée pour la revue. Dernier verrou : une
-**limite de dépense** sur le workspace Anthropic du compte de service.
+## 4. Une revue IA en local
 
-Pour comparaison, Anthropic propose aussi une
-[revue de code managée](https://claude.com/blog/code-review), plus approfondie et nettement plus
-chère par PR. Pour un dépôt vitrine, le workflow borné suffit. Le coût réel par revue sera
-mesuré et publié dans l'épisode suivant.
+Avant chaque push, `make test` doit passer, puis je lance `/code-review`, une commande intégrée à
+Claude Code qui relit le diff de la branche à la recherche de bugs. Pour un dépôt où je suis seul à
+pousser, ça suffit.
 
----
+## 5. Supply chain : ce que l'agent installe
 
-## 6. Supply chain : l'outillage IA est aussi une dépendance
+Une action GitHub, un plugin, une skill ou un paquet exécutent du code avec mes droits, sur ma
+machine ou dans ma CI. S'il est piégé, il voit mes fichiers et mes secrets. Et c'est souvent
+l'agent qui propose de les ajouter.
 
-L'action de revue, les plugins, les serveurs MCP et les skills tiers exécutent du code sur ma
-machine ou dans ma CI. Trois règles :
+Trois règles, dont les deux premières sont écrites dans `CLAUDE.md` :
 
-- **Épingler** : les actions GitHub par SHA de commit, les paquets par version exacte.
-- **Laisser mûrir** : aucune version publiée depuis moins de **7 jours**. Pour l'action de revue,
-  j'ai retenu la v1.0.268 plutôt que la dernière, sortie deux jours plus tôt.
-- **Vérifier la provenance** : avant d'installer un paquet, contrôler que ses métadonnées pointent
-  vers le dépôt officiel. Un nom de paquet inhabituel, c'est exactement là que se cache le
-  typosquatting. Et regarder qui maintient l'outil : un projet de deux semaines porté par une seule
-  personne peut être excellent, mais il ne doit pas devenir une dépendance de votre chaîne.
-
----
+- **Épingler par SHA.** Une étiquette comme `v7` peut être déplacée vers un autre code, pas un SHA
+  de commit : `actions/checkout@3d3c42e… # v7.0.1`.
+- **Attendre 7 jours** avant d'adopter une nouvelle version : une version piégée est généralement
+  repérée et retirée avant.
+- **Vérifier la provenance** : le paquet pointe vers le dépôt officiel, son nom est exact, son
+  mainteneur est identifié. Un agent peut proposer un nom plausible qui n'est pas le bon.
 
 ## Ce que je dirais à un client
 
-Un agent de code, c'est un nouveau membre de l'équipe, très rapide et sans mémoire. Traitez-le
-comme tel :
+Un agent de code, c'est une recrue très rapide et sans mémoire. On l'encadre comme une recrue :
 
 | Pour un humain | Pour un agent | Dans ce dépôt |
 |---|---|---|
 | Onboarding | Règles et plan écrits | `CLAUDE.md`, `PLAN.md`, ADR |
-| Moindre privilège | Confirmation sur tout ce qui détruit ou facture | `permissions.ask` |
-| Contrôles automatiques | Hooks, **testés comme du code** | `guard-gcloud.sh`, `make test` |
-| Documentation | Courte, à jour, chargée au bon moment | `CLAUDE.md`, skills, ADR |
-| Revue de code | Revue IA ciblée sur le contrat, à coût plafonné | `/code-review`, `claude-review.yml` |
-| Budget | Limite de dépense, déclenchements rares | workspace Anthropic, triggers |
+| Moindre privilège | Confirmation avant tout ce qui détruit ou facture | `permissions.ask` |
+| Contrôles automatiques | Hooks testés, sans les prendre pour une frontière de sécurité | `guard-gcloud.sh`, `make test` |
+| Documentation | Courte, chargée au bon moment | `CLAUDE.md`, skills |
+| Revue de code | Revue du diff avant push | `/code-review` |
+| Budget | Mesurer, garder le cache, limiter la sortie | `/usage`, `/effort` |
 
-Le prochain épisode attaque le Resource Plane : `make up`, `make down`, et la chasse aux
-ressources orphelines — avec le compteur de durées et de coûts, réels.
+Le coût d'un agent ne se règle pas avec un plafond posé après coup. Il se mesure, puis se réduit
+par l'usage : un cache préservé, moins de sortie, moins de lectures.
+
+Le prochain épisode attaque le Resource Plane : `make up`, `make down` et la chasse aux ressources
+orphelines, avec les durées et les coûts réels.
